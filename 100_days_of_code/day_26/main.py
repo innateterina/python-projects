@@ -27,10 +27,17 @@ for (index, row) in student_data_frame.iterrows():
 
 nato_phonetic = pandas.read_csv("nato_phonetic_alphabet.csv")
 alphabet = {row.letter: row.code for (index, row) in nato_phonetic.iterrows()}
-user_input = input("Please, input your word: ").upper()
-# letter_list = [letter.upper() for letter in user_input]
-# result = [value for letter in letter_list for (key, value) in alphabet.items()
-#           if key == letter]
-# print(result)
-result_list = [alphabet[letter] for letter in user_input]
-print(result_list)
+
+
+def generate_phonetic():
+    user_input = input("Please, input your word: ").upper()
+    try:
+        result_list = [alphabet[letter] for letter in user_input]
+    except KeyError:
+        print("Sorry,only letters in the alphabet please.")
+        generate_phonetic()
+    else:
+        print(result_list)
+
+
+generate_phonetic()
