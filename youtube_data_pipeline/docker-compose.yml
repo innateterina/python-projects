@@ -15,5 +15,16 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  app:
+    build: .
+    container_name: youtube_data_pipeline
+    depends_on:
+      - postgres
+    environment:
+      DOCKERIZED: "true"
+    volumes:
+      - .:/app
+    command: ["python", "scripts/ingest_data.py"]
+
 volumes:
   postgres_data:

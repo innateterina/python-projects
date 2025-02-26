@@ -1,5 +1,5 @@
-import os
 import json
+import os
 from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -19,16 +19,20 @@ with open(json_file_path, "r") as file:
 
 print("✅ JSON file loaded successfully!")
 
-# ✅ Database Configuration
+# ✅ Detect if running inside Docker
+DOCKERIZED = os.getenv("DOCKERIZED", "false").lower() == "true"
+DB_HOST = "youtube_postgres" if DOCKERIZED else "localhost"
+
+# ✅ Database connection settings
 DB_NAME = "youtube_data"
 DB_USER = "admin"
 DB_PASSWORD = "admin123"
-DB_HOST = "youtube_postgres" if os.getenv(
-    "DOCKERIZED", "false").lower() == "true" else "localhost"
 DB_PORT = "5432"
 
 # ✅ Create database connection using SQLAlchemy
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+print(f"🔗 Connecting to DB: {DATABASE_URL}")
+
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 # ✅ Define the database model
@@ -44,7 +48,7 @@ class VideoCategory(Base):
     assignable = Column(Boolean, nullable=False)
 
 
-# ✅ Create tables if they don’t exist
+# ✅ Create the table if it doesn't exist
 Base.metadata.create_all(engine)
 
 # ✅ Create a session
@@ -52,22 +56,15 @@ SessionLocal = sessionmaker(bind=engine)
 session = SessionLocal()
 
 # ✅ Insert data into PostgreSQL
-try:
-    for item in raw_data["items"]:
-        category = VideoCategory(
-            category_id=int(item["id"]),
-            title=item["snippet"]["title"],
-            assignable=item["snippet"]["assignable"]
-        )
+for item in raw_data["items"]:
+    category = VideoCategory(
+        category_id=int(item["id"]),
+        title=item["snippet"]["title"],
+        assignable=item["snippet"]["assignable"]
+    )
+    session.merge(category)  # Insert or update if exists
 
-        session.merge(category)  # Insert or update if exists
+session.commit()
+session.close()
 
-    session.commit()
-    print("✅ Data successfully inserted into PostgreSQL using SQLAlchemy!")
-
-except Exception as e:
-    session.rollback()
-    print(f"❌ Error inserting data: {e}")
-
-finally:
-    session.close()
+print("✅ Data successfully inserted into PostgreSQL using SQLAlchemy!")
